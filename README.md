@@ -1,75 +1,53 @@
-# Ananth Engine V1.0
-**A Dynamic Resource Optimization & Self-Healing Kernel Memory Engine**
+# Ananth Engine V1.1
 
-[![License: Ananth Fair-Use](https://img.shields.io/badge/License-Ananth_Fair--Use_(%3C$2M_Free)-blue.svg)](#license--commercial-terms)
-[![Language: C++17/20](https://img.shields.io/badge/C%2B%2B-17%2F20-orange.svg)](#quick-start--integration)
-[![Patent Pending](https://img.shields.io/badge/Patent_Pending-202641127187-critical.svg)](#license--commercial-terms)
+**Dynamic Resource Optimization & Self-Healing Kernel Memory Engine**  
+**Author:** Mane Ram Naren ([Ananth E Tech](https://github.com/mramnaren2511-blip/Ananth-Engine-V1.0))  
+**Patent Pending:** Indian Patent Application No. `202641127187` (Filed `26-10-2026`)  
+**License:** Ananth E-Tech Fair-Use License (Free for individuals, researchers & startups under $2M revenue/funding; commercial license for enterprises)
 
-**Ananth Engine V1.0** is a cross-platform, bare-metal C++ kernel memory allocator engineered to provide ultra-low-latency lock-free slab coalescing, dynamic ASLR XOR Canary masking, and cache-line elasticity.
+---
 
-*(Patent Pending: Indian Patent Application No. 202641127187 - Filed: 26-10-2026)* 
+## Architecture & V1.1 Production Hardening
 
-This engine was designed from the ground up to solve fundamental memory bottlenecks in operating systems and bare-metal environments, shifting away from standard allocation limits and bringing extreme hardware-adaptive routing directly into the C++ memory space.
+Ananth Engine is a bare-metal, lock-free fixed-pool slab/bitmap memory engine designed for embedded, kernel, and ultra-low-latency C++17 workloads on **x86_64, ARM64, and 32-bit** platforms across **Linux, Windows, macOS, and Android**.
 
-## 🤝 A Humble Note & Invitation to the Community
+### Core Design
+- **O(1) Inlined Fast-Path (`Ananth_allocate` / `Ananth_free`):** Serves `<= 4 KB` allocations from compact `thread_local FastCache` pockets with zero locks and zero atomics on the hot path.
+- **SWAR Contiguous Bit Discovery:** Finds contiguous free blocks (`2..64` cache lines) in $O(\log_2 \text{REG\_BITS})$ bitwise operations.
+- **Coalesced Atomic Flushing:** Merges multiple freed blocks belonging to the same chunk into a single atomic `fetch_or(..., memory_order_release)` commit.
+- **Full-Width ASLR + SplitMix64 XOR Canary Masking:** Protects cached freelist pointers with full-entropy hardware-seeded XOR masking.
 
-Hello! I built **Ananth Engine** as a 1st-year ECE student driven by a deep passion for low-level systems programming, operating system kernels, and high-performance computing. 
+### V1.1 Fixes & Upgrades
+- **True Cross-Platform Windows & POSIX Support:** Added `VirtualAlloc`/`VirtualFree` + `GlobalMemoryStatusEx` on Windows alongside POSIX `mmap`/`munmap`, plus portable C++17 `std::atomic<reg_t>` and MSVC/GCC/Clang bit intrinsics.
+- **Zero-Leak Thread Teardown:** Added `FastCache::~FastCache()` destructor to flush all cached blocks back to `g_engine.metadata_map` on worker thread exit (100% bitmap reclamation verified across 64 thread teardowns).
+- **14.6x Smaller Per-Thread TLS Footprint:** Reduced `FastCache` static TLS usage from ~264 KB/thread to ~18 KB/thread.
+- **Safe Lifecycle & Bounds Guards:** Added idempotent thread-safe auto-initialization, `Ananth_destroy()` cleanup API, out-of-pool pointer rejection in `Ananth_free`, and spin-backoff on multi-chunk contention.
+- **Aligned Licensing:** Unified headers and documentation under the Ananth E-Tech Fair-Use License (<$2M free).
 
-I have poured my absolute best into making this architecture as highly optimized, secure, and bug-free as possible. However, I humbly acknowledge that kernel-level memory management is incredibly complex, and **I do not claim this code to be 100% perfect.** 
+---
 
-There might be hidden edge cases, architecture-specific quirks, or areas for mathematical optimization that I have yet to discover. I have immense respect for the global C++ systems community, and I politely invite senior engineers, kernel researchers, and open-source developers to review this code, test it under extreme workloads, and help develop it further. 
-
-Whether it is fixing a hidden bug, optimizing a bitwise operation, or suggesting an architectural improvement—please feel free to open an Issue or submit a Pull Request. Your guidance and contributions are deeply appreciated. Let's collaborate and build something revolutionary together!
-
-## 🚀 Key Architectural Features
-* **Zero Fixed Numbers in XOR Canary:** Hardware ASLR entropy is dynamically mixed to generate runtime canary seeds. Pointers in the free list are encrypted (Safe-Linking) with just 1-cycle XOR latency.
-* **Cache-Line Elasticity & False-Sharing Prevention:** Context variables are aligned to `HW_CACHE_LINE` (dynamically adapting to 64B or 128B boundaries like Apple Silicon) to prevent multi-core cache-line bouncing.
-* **SWAR Contiguous Bit Discovery:** Utilizes logarithmic bitwise shifts ($O(\log_2 N)$) to find contiguous free blocks efficiently without looping bit-by-bit.
-* **Coalesced Atomic Flushing:** When thread caches are full, multiple bit updates are batched into a single `__atomic_fetch_or` to minimize global atomic contention.
-
-## 💻 Supported Architectures & Devices
-This engine dynamically adapts to the CPU architecture and operating system at compile time:
-* **Architectures:** 
-  * `x86_64` / `AMD64` (Intel & AMD Laptops, Desktops, Servers)
-  * `ARM64` / `AArch64` (Apple Silicon M1/M2/M3, Modern Android Phones, Raspberry Pi 4/5)
-  * `32-bit` (`arm`, `i386`) (Embedded systems and IoT devices)
-* **Operating Systems:** Linux, macOS, Android, and Windows.
-
-## 🛠️ How to Compile & Use
-Simply include the engine in your C++ project. Since it leverages raw Linux/POSIX headers (like `mmap`), it is best compiled with GCC or Clang on Unix-like systems.
+## Quick Start (Build, Test & Benchmark)
 
 ```bash
-# Compile with GCC (using -O3 for maximum performance)
-g++ -O3 -pthread -o ananth_test your_main_file.cpp ananth.cpp
+# Run correctness, zero-leak thread teardown & 8-thread concurrency stress tests
+make test
+
+# Run side-by-side benchmark vs system glibc malloc
+make bench
 ```
 
 ---
 
-## 📜 License & Commercial Terms
+## Verified Benchmark Results (Linux x86_64, GCC `-O3`)
 
-Ananth Engine is distributed under the **Ananth E-Tech Fair-Use License v1.0** (Patent Pending: `202641127187`).
+Measured via `make bench` (`benchmarks/bench_suite.cpp`, throughput in million alloc+free pairs per second):
 
-### ✅ Free for Individuals, Researchers & Startups
-You are granted a **free, perpetual license** to use, study, modify, and distribute this software if your organization meets **BOTH** of the following criteria:
-1. **Less than $1,000,000 USD** in annual gross revenue.
-2. **Less than $1,000,000 USD** in total cumulative raised funding.
+| Workload | System `glibc` | Ananth Engine V1.1 | Speedup |
+| :--- | :---: | :---: | :---: |
+| **64 B (4 Threads)** | 76.80 M/s | **194.47 M/s** | **2.53x** |
+| **2 KB (Single-Thread)** | 39.62 M/s | **95.51 M/s** | **2.41x** |
+| **256 B (Single-Thread)** | 43.61 M/s | **83.63 M/s** | **1.92x** |
+| **64 B (Single-Thread)** | 80.26 M/s | **80.28 M/s** | **1.00x** |
+| **8 KB (Single-Thread)\*** | 47.15 M/s | 1.73 M/s | 0.04x |
 
-*This tier is designed to empower students, academic research labs, and early-stage startups to innovate without barriers.*
-
-### 🏢 Enterprise & Commercial Licensing
-If your organization exceeds either the **$1,000,000 USD** revenue or funding threshold, you are **strictly prohibited** from using this software in any production, staging, testing, or internal environment without an active Commercial License. 
-
-This restriction strictly applies to (but is not limited to):
-- **Cloud Hyperscalers & Datacenters** (AWS, GCP, Azure)
-- **Mobile OS & SoC Manufacturers** (Android Ecosystem, Chipset designers)
-- **High-Frequency Trading (HFT) & Quantitative Firms**
-- **Enterprise Linux & OS Vendors**
-
-To acquire a Commercial License and integrate this architecture into your enterprise infrastructure, contact the author directly:
-- **Author & Inventor:** Mane Ram Naren (Founder, Ananth E Tech)
-- **Commercial Licensing:** [ananthetech@gmail.com](mailto:ananthetech@gmail.com)
-
-### ⚠️ Liability & Legal Disclaimer
-**NO WARRANTY:** This software is provided "AS IS", without warranty of any kind. The author is not liable for any data loss, server downtime, financial losses (including HFT trading anomalies), or system failures arising from the use of this software. 
-
-*Any unauthorized commercial deployment of this architecture will be treated as a direct violation of intellectual property rights under Indian and International Patent Laws.*
+*\*Note: Ananth Engine is specialized for `<= 4 KB` slab/kernel blocks cached in `FastCache`. Requests `> 4 KB` bypass TLS bins and perform direct multi-chunk atomic bitmap CAS; for large-buffer (`64 KB – 4 MB`) workloads, use **Ananth E-Flash V2.0**.*
