@@ -301,7 +301,7 @@ void* Ananth_allocate_slow_refill(size_t req_bytes) noexcept {
                 if (batch_limit == 0) batch_limit = 1;
 
                 while (temp != 0 && count < batch_limit) {
-                    reg_t lowest_bit = temp & static_cast<reg_t>(-static_cast<sreg_t>(temp));
+                    reg_t lowest_bit = temp & (~temp + static_cast<reg_t>(1));
                     claimed_mask |= lowest_bit;
                     temp &= ~lowest_bit;
                     count++;
