@@ -3,7 +3,7 @@
 **Dynamic Resource Optimization & Self-Healing Kernel Memory Engine**  
 **Author:** Mane Ram Naren ([Ananth E Tech](https://github.com/mramnaren2511-blip/Ananth-Engine-V1.0))  
 **Patent Pending:** Indian Patent Application No. `202641127187` (Filed `26-10-2026`)  
-**License:** Ananth E-Tech Fair-Use License (Free for individuals, researchers & startups under $2M revenue/funding; commercial license for enterprises)
+**License:** Ananth E-Tech Fair-Use License (Free for individuals, researchers & startups under $1M revenue/funding; commercial license for enterprises)
 
 ---
 
