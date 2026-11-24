@@ -6,7 +6,7 @@
  * Patent:  Indian Patent Application No. 202641127187 (Patent Pending)
  *
  * LICENSE: ANANTH E-TECH FAIR-USE LICENSE
- * - FREE for individuals, researchers & startups (<$2M revenue / <$2M funding).
+ * - FREE for individuals, researchers & startups (<$1M revenue / <$1M funding).
  * - Commercial license required for Enterprises (HFTs, Cloud Giants, etc.).
  * See LICENSE file for full terms and conditions.
  * =========================================================================
